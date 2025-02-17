@@ -1,0 +1,17 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  EmparejamientoQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: EmparejamientoQueue
+
+Outputs:
+  EmparejamientoQueueUrl:
+    Value: !Ref EmparejamientoQueue
+    Export:
+      Name: EmparejamientoQueueUrl
+
+  OrdenesCompraQueueArn:
+    Value: !GetAtt EmparejamientoQueue.Arn
+    Export:
+      Name: EmparejamientoQueueArn

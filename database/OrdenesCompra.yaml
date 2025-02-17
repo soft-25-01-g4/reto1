@@ -9,6 +9,8 @@ Resources:
           AttributeType: S
         - AttributeName: id_articulo
           AttributeType: S
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE  # Se usará para lanzar los emparejamientos
       KeySchema:
         - AttributeName: id_orden_compra
           KeyType: HASH
@@ -22,7 +24,6 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
-
 Outputs:
   OrdenesCompraTableName:
     Value: !Ref OrdenesCompraTable
