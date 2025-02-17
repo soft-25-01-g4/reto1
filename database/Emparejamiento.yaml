@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  EmparejamientosTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Emparejamientos
+      AttributeDefinitions:
+        - AttributeName: id_transaccion
+          AttributeType: N
+        - AttributeName: id_emparejamiento
+          AttributeType: N
+        - AttributeName: id_orden_compra
+          AttributeType: S
+        - AttributeName: id_orden_venta
+          AttributeType: S
+        - AttributeName: id_articulo
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id_transaccion
+          KeyType: HASH
+        - AttributeName: id_emparejamiento
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+        - IndexName: OrdenCompraIndex
+          KeySchema:
+            - AttributeName: id_orden_compra
+              KeyType: HASH
+            - AttributeName: id_transaccion
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: OrdenVentaIndex
+          KeySchema:
+            - AttributeName: id_orden_venta
+              KeyType: HASH
+            - AttributeName: id_transaccion
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: ArticuloIndex
+          KeySchema:
+            - AttributeName: id_articulo
+              KeyType: HASH
+            - AttributeName: id_transaccion
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+Outputs:
+  EmparejamientosTableName:
+    Value: !Ref EmparejamientosTable
+    Description: Tabla que contiene los emparejamientos de transacciones
