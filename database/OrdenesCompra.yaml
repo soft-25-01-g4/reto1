@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  OrdenesCompraTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: OrdenesCompra
+      AttributeDefinitions:
+        - AttributeName: id_orden_compra
+          AttributeType: S
+        - AttributeName: id_articulo
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id_orden_compra
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+        - IndexName: ArticuloIndex
+          KeySchema:
+            - AttributeName: id_articulo
+              KeyType: HASH
+            - AttributeName: id_orden_compra
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+Outputs:
+  OrdenesCompraTableName:
+    Value: !Ref OrdenesCompraTable
+    Description: Tabla que contiene las órdenes de compra
