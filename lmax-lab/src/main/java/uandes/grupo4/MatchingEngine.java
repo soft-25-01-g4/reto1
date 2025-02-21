@@ -2,35 +2,53 @@ package uandes.grupo4;
 import com.lmax.disruptor.*;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
+import io.quarkus.runtime.Quarkus;
+import io.quarkus.runtime.annotations.QuarkusMain;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
-
+@QuarkusMain
 public class MatchingEngine {
     public static void main(String[] args) {
+        Quarkus.run(args);
+    }
+}
+
+@Path("/orders")
+@ApplicationScoped
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+class OrderResource {
+    private final Disruptor<OrderEvent> disruptor;
+    private final RingBuffer<OrderEvent> ringBuffer;
+
+    @Inject
+    public OrderResource() {
         ThreadFactory threadFactory = Executors.defaultThreadFactory();
         EventFactory<OrderEvent> eventFactory = OrderEvent::new;
         int bufferSize = 1024;
 
-        // Crear Disruptor con nuevo constructor
-        Disruptor<OrderEvent> disruptor = new Disruptor<>(eventFactory, bufferSize, threadFactory,
+        disruptor = new Disruptor<>(eventFactory, bufferSize, threadFactory,
                 ProducerType.SINGLE, new SleepingWaitStrategy());
-
-        // Configurar el manejador de eventos
         disruptor.handleEventsWith(new OrderEventHandler());
         disruptor.start();
+        ringBuffer = disruptor.getRingBuffer();
+    }
 
-        // Publicar eventos (órdenes de prueba)
-        RingBuffer<OrderEvent> ringBuffer = disruptor.getRingBuffer();
-        for (int i = 0; i < 10; i++) {
-            long sequence = ringBuffer.next();
-            try {
-                OrderEvent event = ringBuffer.get(sequence);
-                event.set(new Order("order-" + i, i % 2 == 0 ? "buy" : "sell", "USD", 100));
-            } finally {
-                ringBuffer.publish(sequence);
-            }
+    @POST
+    public String submitOrder(Order order) {
+        long sequence = ringBuffer.next();
+        try {
+            OrderEvent event = ringBuffer.get(sequence);
+            event.set(order);
+        } finally {
+            ringBuffer.publish(sequence);
         }
+        return "Orden recibida: " + order.id;
     }
 }
