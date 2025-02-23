@@ -1,37 +1,77 @@
 package uandes.grupo4;
-
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+
 @Path("/orders")
+@ApplicationScoped
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class OrderRouter {
 
-    // Simula una tabla en memoria que asocia activos con URLs de procesamiento
-    private static final Map<String, String> assetRoutes = new HashMap<>();
+    private final Map<String, String> assetToEndpoint = new HashMap<>(Map.of(
+            "USDT", "http://localhost:8080/orders"
+    ));
 
-    static {
-        assetRoutes.put("USD", "https://lmax-juank1400-dev.apps.rm3.7wse.p1.openshiftapps.com");
-        assetRoutes.put("BTC", "http://localhost:8082/match");
-    }
-
-    OrderMatchingClient  orderMatchingClient = new OrderMatchingClient();
+    @Inject
+    @RestClient
+    OrderServiceClient orderServiceClient;
 
     @POST
     public Response routeOrder(Order order) {
-        String endpoint = assetRoutes.get(order.getAsset());
+        String endpoint = assetToEndpoint.get(order.asset);
 
         if (endpoint == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Asset type not supported"))
+                    .entity("Asset no soportado: " + order.asset)
                     .build();
         }
 
-        // Enviar orden al servicio de emparejamiento correspondiente
-        orderMatchingClient.sendOrder(endpoint, order);
-        return Response.ok(Map.of("message", "Order forwarded to " + endpoint)).build();
+        // Enviar la orden al motor de emparejamiento correspondiente
+        OrderServiceClient dynamicClient = RestClientBuilder.newBuilder()
+                .baseUri(URI.create(endpoint))
+                .build(OrderServiceClient.class);
+
+        return Response.ok("Orden enviada al motor correspondiente").build();
+        /*
+        ------------ ESTE EN CASO DE QUE QUIERAS VER EL RESPONSE DE LOS ENDPOINTS---------------
+
+        Response externalResponse = dynamicClient.forwardOrder(order);
+
+        return Response.status(externalResponse.getStatus())
+                .entity(externalResponse.readEntity(String.class))
+                .build();
+
+         */
+    }
+
+    @POST
+    @Path("/add-endpoint")
+    public Response addEndpoint(@QueryParam("asset") String asset, @QueryParam("endpoint") String endpoint) {
+        if (asset == null || endpoint == null || asset.isBlank() || endpoint.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Asset and endpoint must not be empty")
+                    .build();
+        }
+
+        assetToEndpoint.put(asset, endpoint);
+        return Response.ok("Endpoint added successfully for asset: " + asset).build();
+    }
+
+    /*
+    ESTE LO AGREGO PARA QUE PUEDAS VER LOS ENDPOINTS QUE SE VAN AGREGANDO
+     */
+    @GET
+    @Path("/endpoints")
+    public Response getAllEndpoints() {
+        return Response.ok(assetToEndpoint).build();
     }
 }
