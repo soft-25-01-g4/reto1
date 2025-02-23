@@ -3,7 +3,10 @@ package uandes.grupo4;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
 // Clase que representa una orden
+@RegisterForReflection
 public class Order {
     
     @JsonCreator
@@ -16,7 +19,7 @@ public class Order {
                     this.quantity = quantity;
                     this.type = type;
                 }
-                
+
     @JsonProperty("id")
     public String id;
 
