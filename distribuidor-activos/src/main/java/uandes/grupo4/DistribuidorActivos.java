@@ -58,7 +58,7 @@ public class DistribuidorActivos {
 
     private String generarLMAX(String asset) {
         try {
-            String deploymentName = "lmax-" + asset.toLowerCase();
+            String deploymentName = "lmax-" + asset.toLowerCase().replace(" ", "-").replace("_", "-");
             String image = "quay.io/jcepedav/lmax:latest";
 
             // Crear Deployment
