@@ -16,8 +16,19 @@ public class Order {
                     this.quantity = quantity;
                     this.type = type;
                 }
-    String id;
-    String type; // "buy" o "sell"
-    String asset;
-    int quantity;
+                
+    @JsonProperty("id")
+    public String id;
+
+    @JsonProperty("asset")
+    public String asset;
+
+    @JsonProperty("quantity")
+    public int quantity;
+
+    @JsonProperty("type")
+    public String type;
+
+    // 🔹 Constructor vacío requerido por Jackson
+    public Order() {}
 }
