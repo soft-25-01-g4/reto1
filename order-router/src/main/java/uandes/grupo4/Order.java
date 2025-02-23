@@ -1,5 +1,6 @@
 package uandes.grupo4;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Order {
@@ -15,10 +16,11 @@ public class Order {
     @JsonProperty("quantity")
     public int quantity;
 
-    // Constructor vacío requerido por Jackson
-    public Order() {}
-
-    public Order(String id, String type, String asset, int quantity) {
+    @JsonCreator
+    public Order(@JsonProperty("id") String id,
+                 @JsonProperty("type") String type,
+                 @JsonProperty("asset") String asset,
+                 @JsonProperty("quantity") int quantity) {
         this.id = id;
         this.type = type;
         this.asset = asset;

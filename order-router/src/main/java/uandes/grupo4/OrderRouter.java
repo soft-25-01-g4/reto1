@@ -3,7 +3,6 @@ package uandes.grupo4;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 import java.util.HashMap;
 import java.util.Map;
 @Path("/orders")
