@@ -13,8 +13,7 @@ class DistribuidorActivosTest {
         given()
           .when().get("/distribute")
           .then()
-             .statusCode(200)
-             .body(is("Hello from Quarkus REST"));
+             .statusCode(200);
     }
 
 }

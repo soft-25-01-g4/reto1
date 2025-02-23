@@ -1,77 +1,124 @@
 package uandes.grupo4;
 
-import io.quarkus.logging.Log;
-import io.quarkus.runtime.Startup;
-import io.smallrye.mutiny.Uni;
-import jakarta.enterprise.context.ApplicationScoped;
+import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.Configuration;
+import io.kubernetes.client.openapi.apis.AppsV1Api;
+import io.kubernetes.client.openapi.apis.AppsV1Api.APIlistNamespacedDeploymentRequest;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.*;
+import io.kubernetes.client.util.Config;
+import io.kubernetes.client.custom.IntOrString;
+
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.dsl.PodResource;
-import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.PodBuilder;
-
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Path("/distribute")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@ApplicationScoped
 public class DistribuidorActivos {
 
-    private final Map<String, String> assetUrlMap = new ConcurrentHashMap<>();
+    private final Map<String, String> assetToUrlMap = new HashMap<>();
+    private final AppsV1Api appsApi;
+    private final CoreV1Api coreApi;
+    private final String namespace = "juank1400-dev";  // Cambia esto según tu entorno
 
-    private final KubernetesClient kubernetesClient;
-    ;
-
-    public DistribuidorActivos() {
-        try (KubernetesClient client = new DefaultKubernetesClient()) {
-            System.out.println("Connected to Kubernetes: " + client.getNamespace());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public DistribuidorActivos() throws Exception {
+        ApiClient client = Config.defaultClient();
+        Configuration.setDefaultApiClient(client);
+        this.appsApi = new AppsV1Api(client);
+        this.coreApi = new CoreV1Api(client);
     }
 
     @POST
-    public Uni<Response> distributeAsset(AssetRequest request) {
-        if (assetUrlMap.containsKey(request.asset)) {
-            return Uni.createFrom().item(Response.ok(assetUrlMap.get(request.asset)).build());
+    public Response distributeAsset(AssetRequest request) {
+        String asset = request.asset();
+        String type = request.type();
+        if(type.equals("sell")) {
+            if (assetToUrlMap.containsKey(asset)) {
+                return Response.ok(Map.of("url", assetToUrlMap.get(asset))).build();
+            }
+    
+            // No existe, generar un nuevo LMAX
+            String serviceUrl = generarLMAX(asset);
+            if (serviceUrl != null) {
+                assetToUrlMap.put(asset, serviceUrl);
+                return Response.ok(Map.of("url", serviceUrl)).build();
+            } else {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(Map.of("error", "Failed to deploy LMAX instance"))
+                        .build();
+            }
+        } else {
+            return Response.ok("Deploy don't required").build();
         }
-
-        return Uni.createFrom().item(() -> {
-            String serviceUrl = generateLMAX(request.asset);
-            assetUrlMap.put(request.asset, serviceUrl);
-            return Response.ok(serviceUrl).build();
-        });
     }
 
-    private String generateLMAX(String asset) {
-        String podName = "lmax-" + asset.toLowerCase();
-        Pod pod = new PodBuilder()
-                .withNewMetadata()
-                .withName(podName)
-                .endMetadata()
-                .withNewSpec()
-                .addNewContainer()
-                .withName("lmax")
-                .withImage("quay.io/jcepedav/lmax:latest")
-                .addNewPort().withContainerPort(8080).endPort()
-                .endContainer()
-                .endSpec()
-                .build();
-        
-        kubernetesClient.pods().inNamespace("default").createOrReplace(pod);
-        
-        return "http://" + podName + ".default.svc.cluster.local:8080";
+    private String generarLMAX(String asset) {
+        try {
+            String deploymentName = "lmax-" + asset.toLowerCase();
+            String image = "quay.io/jcepedav/lmax:latest";
+
+            // Crear Deployment
+            V1Deployment deployment = new V1Deployment()
+                .metadata(new V1ObjectMeta().name(deploymentName).namespace(namespace))
+                .spec(new V1DeploymentSpec()
+                    .replicas(1)
+                    .selector(new V1LabelSelector().matchLabels(Map.of("app", deploymentName)))
+                    .template(new V1PodTemplateSpec()
+                        .metadata(new V1ObjectMeta().labels(Map.of("app", deploymentName)))
+                        .spec(new V1PodSpec()
+                            .containers(java.util.List.of(
+                                new V1Container()
+                                    .name("lmax-container")
+                                    .image(image)
+                                    .ports(java.util.List.of(new V1ContainerPort().containerPort(8080)))
+                            ))
+                        )
+                    )
+                );
+
+            appsApi.createNamespacedDeployment(namespace, deployment).execute();
+            //ListDeployments();
+
+            // Crear Service
+            V1Service service = new V1Service()
+                .metadata(new V1ObjectMeta().name(deploymentName).namespace(namespace))
+                .spec(new V1ServiceSpec()
+                    .selector(Map.of("app", deploymentName))
+                    .ports(java.util.List.of(new V1ServicePort().port(8080).targetPort(new IntOrString(8080))))
+                    .type("ClusterIP")
+                );
+
+            coreApi.createNamespacedService(namespace, service).execute();
+
+            // Construir la URL del servicio
+            String serviceUrl = "http://" + deploymentName + "." + namespace + ".svc.cluster.local:8080";
+            return serviceUrl;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
-    public static class AssetRequest {
-        public String id;
-        public String type;
-        public String asset;
-        public int quantity;
+    public void ListDeployments() {
+        try {
+            V1DeploymentList deployments = appsApi.listNamespacedDeployment(namespace).execute();
+
+            // Imprimir información de los Deployments
+            for (V1Deployment deployment : deployments.getItems()) {
+                System.out.println("Nombre: " + deployment.getMetadata().getName());
+                System.out.println("Réplicas deseadas: " + deployment.getSpec().getReplicas());
+            }
+        }
+        catch(Exception e)
+        {
+            System.out.println(e);
+        }
     }
+    
+    public record AssetRequest(String id, String type, String asset, int quantity) {}
 }
