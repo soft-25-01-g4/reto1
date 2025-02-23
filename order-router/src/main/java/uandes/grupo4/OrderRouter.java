@@ -22,7 +22,7 @@ public class OrderRouter {
 
     @POST
     public Response routeOrder(Order order) {
-        String endpoint = assetRoutes.get(order.asset);
+        String endpoint = assetRoutes.get(order.getAsset());
 
         if (endpoint == null) {
             return Response.status(Response.Status.BAD_REQUEST)
