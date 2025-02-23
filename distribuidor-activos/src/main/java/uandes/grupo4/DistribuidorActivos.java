@@ -23,7 +23,7 @@ public class DistribuidorActivos {
     private final Map<String, String> assetToUrlMap = new HashMap<>();
     private final AppsV1Api appsApi;
     private final CoreV1Api coreApi;
-    private final String namespace = "juank1400-dev";  // Cambia esto según tu entorno
+    private final String namespace = "juank1400-dev";
 
     public DistribuidorActivos() throws Exception {
         ApiClient client = Config.defaultClient();
