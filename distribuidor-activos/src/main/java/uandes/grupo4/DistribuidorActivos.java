@@ -60,50 +60,71 @@ public class DistribuidorActivos {
         try {
             String deploymentName = "lmax-" + asset.toLowerCase().replace(" ", "-").replace("_", "-");
             String image = "quay.io/jcepedav/lmax:latest";
-
-            // Crear Deployment
+            String sidecarImage = "busybox"; // Sidecar para logs
+    
+            // Volumen compartido entre contenedores
+            V1Volume sharedVolume = new V1Volume()
+                .name("shared-data")
+                .emptyDir(new V1EmptyDirVolumeSource());
+    
+            // Contenedor principal
+            V1Container lmaxContainer = new V1Container()
+                .name("lmax-container")
+                .image(image)
+                .ports(java.util.List.of(new V1ContainerPort().containerPort(8080)))
+                .volumeMounts(java.util.List.of(new V1VolumeMount().name("shared-data").mountPath("/data")));
+    
+            // Sidecar para monitoreo de logs
+            V1Container sidecarContainer = new V1Container()
+                .name("log-sidecar")
+                .image(sidecarImage)
+                .command(java.util.List.of("sh", "-c", "tail -F /data/matches.log"))
+                .volumeMounts(java.util.List.of(new V1VolumeMount().name("shared-data").mountPath("/data")));
+    
+            // Labels para OpenShift
+            Map<String, String> labels = Map.of(
+                "app", deploymentName,
+                "app.kubernetes.io/name", deploymentName,
+                "app.kubernetes.io/part-of", "lmax-group"
+            );
+    
+            // Crear Deployment con etiquetas para OpenShift
             V1Deployment deployment = new V1Deployment()
-                .metadata(new V1ObjectMeta().name(deploymentName).namespace(namespace))
+                .metadata(new V1ObjectMeta().name(deploymentName).namespace(namespace).labels(labels))
                 .spec(new V1DeploymentSpec()
                     .replicas(1)
                     .selector(new V1LabelSelector().matchLabels(Map.of("app", deploymentName)))
                     .template(new V1PodTemplateSpec()
-                        .metadata(new V1ObjectMeta().labels(Map.of("app", deploymentName, "app.kubernetes.io/part-of", "lmax-group")))
+                        .metadata(new V1ObjectMeta().labels(labels))
                         .spec(new V1PodSpec()
-                            .containers(java.util.List.of(
-                                new V1Container()
-                                    .name("lmax-container")
-                                    .image(image)
-                                    .ports(java.util.List.of(new V1ContainerPort().containerPort(8080)))
-                            ))
+                            .volumes(java.util.List.of(sharedVolume)) // Agregar volumen compartido
+                            .containers(java.util.List.of(lmaxContainer, sidecarContainer)) // Agregar contenedores
                         )
                     )
                 );
-
+    
             appsApi.createNamespacedDeployment(namespace, deployment).execute();
-            //ListDeployments();
-
-            // Crear Service
+    
+            // Crear Service con las mismas etiquetas
             V1Service service = new V1Service()
-                .metadata(new V1ObjectMeta().name(deploymentName).namespace(namespace).labels(Map.of("app", deploymentName, "app.kubernetes.io/part-of", "lmax-group")))
+                .metadata(new V1ObjectMeta().name(deploymentName).namespace(namespace).labels(labels))
                 .spec(new V1ServiceSpec()
                     .selector(Map.of("app", deploymentName))
                     .ports(java.util.List.of(new V1ServicePort().port(8080).targetPort(new IntOrString(8080))))
                     .type("ClusterIP")
                 );
-
+    
             coreApi.createNamespacedService(namespace, service).execute();
-
+    
             // Construir la URL del servicio
-            String serviceUrl = "http://" + deploymentName + "." + namespace + ".svc.cluster.local:8080";
-            return serviceUrl;
-
+            return "http://" + deploymentName + "." + namespace + ".svc.cluster.local:8080";
+    
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
     }
-
+        
     public void ListDeployments() {
         try {
             V1DeploymentList deployments = appsApi.listNamespacedDeployment(namespace).execute();

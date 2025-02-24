@@ -17,9 +17,7 @@ import java.util.Map;
 @Consumes(MediaType.APPLICATION_JSON)
 public class OrderRouter {
 
-    private final Map<String, String> assetToEndpoint = new HashMap<>(Map.of(
-            "USDT", "http://localhost:8080/orders"
-    ));
+    private final Map<String, String> assetToEndpoint = new HashMap<>(Map.of());
 
     @Inject
     @RestClient
@@ -32,6 +30,7 @@ public class OrderRouter {
         String endpoint = assetToEndpoint.get(order.getAsset());
 
         long timestamp = System.currentTimeMillis();
+
         redisService.saveOrderTiming(order.getId(), String.valueOf(timestamp));
 
         if (endpoint == null) {

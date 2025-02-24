@@ -1,8 +1,6 @@
 package uandes.grupo4;
 import com.lmax.disruptor.*;
 
-import jakarta.enterprise.inject.spi.CDI;
-
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -11,12 +9,6 @@ import java.util.*;
 class OrderEventHandler implements EventHandler<OrderEvent> {
     private final Queue<Order> buyOrders = new LinkedList<>();
     private final Queue<Order> sellOrders = new LinkedList<>();
-
-    private RedisService redis;
-
-    public void setRedisService(RedisService redisService) {
-        this.redis = redisService;
-    }
 
     @Override
     public void onEvent(OrderEvent event, long sequence, boolean endOfBatch) {

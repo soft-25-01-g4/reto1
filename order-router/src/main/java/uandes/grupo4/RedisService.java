@@ -1,7 +1,6 @@
 package uandes.grupo4;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.hash.HashCommands;
-import io.quarkus.redis.datasource.hash.HashScanCursor;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
