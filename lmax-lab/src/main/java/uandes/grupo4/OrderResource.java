@@ -19,14 +19,19 @@ public class OrderResource {
     private final RingBuffer<OrderEvent> ringBuffer;
 
     @Inject
+    RedisService redisService;
+
+    @Inject
     public OrderResource() {
         ThreadFactory threadFactory = Executors.defaultThreadFactory();
         EventFactory<OrderEvent> eventFactory = OrderEvent::new;
         int bufferSize = 1024;
+        OrderEventHandler event = new OrderEventHandler();
+        event.setRedisService(redisService);
 
         disruptor = new Disruptor<>(eventFactory, bufferSize, threadFactory,
                 ProducerType.SINGLE, new SleepingWaitStrategy());
-        disruptor.handleEventsWith(new OrderEventHandler());
+        disruptor.handleEventsWith(event);
         disruptor.start();
         ringBuffer = disruptor.getRingBuffer();
     }

@@ -85,7 +85,7 @@ public class DistribuidorActivos {
 
             // Crear Service
             V1Service service = new V1Service()
-                .metadata(new V1ObjectMeta().name(deploymentName).namespace(namespace)..labels(Map.of("app", deploymentName, "app.kubernetes.io/part-of", "lmax-group")))
+                .metadata(new V1ObjectMeta().name(deploymentName).namespace(namespace).labels(Map.of("app", deploymentName, "app.kubernetes.io/part-of", "lmax-group")))
                 .spec(new V1ServiceSpec()
                     .selector(Map.of("app", deploymentName))
                     .ports(java.util.List.of(new V1ServicePort().port(8080).targetPort(new IntOrString(8080))))

@@ -9,9 +9,9 @@
     <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <quarkus.platform.version>3.2.0.Final</quarkus.platform.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <quarkus.platform.version>3.18.3</quarkus.platform.version>
         <quarkus.plugin.version>${quarkus.platform.version}</quarkus.plugin.version>
     </properties>
 
@@ -43,6 +43,14 @@
             <groupId>com.lmax</groupId>
             <artifactId>disruptor</artifactId>
             <version>3.4.2</version>
+        </dependency>
+
+
+        <!-- redis -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-redis-client</artifactId>
+            <version>3.18.0</version>
         </dependency>
 
         <!-- Logging -->
