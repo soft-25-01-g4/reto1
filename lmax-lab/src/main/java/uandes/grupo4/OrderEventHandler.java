@@ -43,7 +43,7 @@ class OrderEventHandler implements EventHandler<OrderEvent> {
             {
                 long timestamp = System.currentTimeMillis();
                 System.out.println("Timestamp: " + timestamp);
-                saveMatch(incomingOrder.id, queuedOrder.id, queuedOrder.asset, matchedQuantity);
+                saveMatch(incomingOrder.id, queuedOrder.id, queuedOrder.asset, matchedQuantity, timestamp);
                 //redis.saveOrderFinish(incomingOrder.id, String.valueOf(timestamp));
             }
 
@@ -55,8 +55,8 @@ class OrderEventHandler implements EventHandler<OrderEvent> {
     }
 
 
-    public void saveMatch(String orderId, String matchId, String asset, int quantity) {
-        String logEntry = orderId + "," + matchId + "," + asset + "," + quantity + "\n";
+    public void saveMatch(String orderId, String matchId, String asset, int quantity, long timestamp) {
+        String logEntry = orderId + "," + matchId + "," + asset + "," + quantity + ", " + timestamp + "\n";
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("/data/matches.log", true))) {
             writer.write(logEntry);
         } catch (IOException e) {
