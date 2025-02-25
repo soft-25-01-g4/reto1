@@ -17,25 +17,28 @@ import java.util.Map;
 @Consumes(MediaType.APPLICATION_JSON)
 public class OrderRouter {
 
-    private final Map<String, String> assetToEndpoint = new HashMap<>(Map.of());
+    @Inject
+    RedisService redisService;
+
+    private final Map<String, String> assetToEndpoint = new HashMap<>(Map.of(
+            "USDT", "https://postman-echo.com/post"
+    ));
 
     @Inject
     @RestClient
     OrderServiceClient orderServiceClient;
 
-    @Inject
-    RedisService redisService;
     @POST
     public Response routeOrder(Order order) {
-        String endpoint = assetToEndpoint.get(order.getAsset());
+        String endpoint = assetToEndpoint.get(order.asset);
 
         long timestamp = System.currentTimeMillis();
 
         redisService.saveOrderTiming(order.getId(), String.valueOf(timestamp));
 
         if (endpoint == null) {
-            return Response.status(Response.Status.OK)
-                    .entity("Este activo no tiene ofertas disponibles: " + order.getAsset())
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Asset no soportado: " + order.asset)
                     .build();
         }
 
@@ -47,9 +50,8 @@ public class OrderRouter {
         Response externalResponse = dynamicClient.forwardOrder(order);
 
         return Response.status(externalResponse.getStatus())
-        .entity(externalResponse.readEntity(String.class))
-        .build();
-
+                .entity(externalResponse.readEntity(String.class))
+                .build();
         /*
         ------------ ESTE EN CASO DE QUE QUIERAS VER EL RESPONSE DE LOS ENDPOINTS---------------
 
@@ -58,8 +60,6 @@ public class OrderRouter {
         return Response.status(externalResponse.getStatus())
                 .entity(externalResponse.readEntity(String.class))
                 .build();
-
-                return Response.ok("Orden enviada al motor correspondiente").build();
 
          */
     }

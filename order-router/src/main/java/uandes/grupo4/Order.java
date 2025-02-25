@@ -2,12 +2,19 @@ package uandes.grupo4;
 // Clase que representa una orden
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 public class Order {
-    private String id;
-    private String type;
-    private String asset;
-    private int quantity;
+    
+    public Order(String id, String type, String asset, int quantity) {
+        this.id = id;
+        this.type = type;
+        this.asset = asset;
+        this.quantity = quantity;
+    }
+
+    String id;
+    String type; // "buy" o "sell"
+    String asset;
+    int quantity;
 
     // Getters y Setters
     public String getId() { return id; }

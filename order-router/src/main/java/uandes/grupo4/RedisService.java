@@ -19,8 +19,5 @@ public class RedisService {
         hashCommands.hset(orderId, Map.of("horaInicio", horaInicio));
     }
 
-    public void saveOrderFinish(String orderId, String horaFinal) {
-        hashCommands.hset(orderId, Map.of("horaFinal", horaFinal));
-    }
 
 }
