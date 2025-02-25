@@ -10,6 +10,8 @@ import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @QuarkusMain
 public class RedisSidecar {
@@ -29,6 +31,9 @@ class SidecarService implements QuarkusApplication {
     @ConfigProperty(name = "file.path")
     String filePath;
 
+    @ConfigProperty(name = "redis.password")
+    String redisPassword;
+
     private Jedis jedis;
     private WatchService watchService;
 
@@ -40,7 +45,6 @@ class SidecarService implements QuarkusApplication {
     }
 
     private void startWatching() {
-        jedis = new Jedis(redisHost, redisPort);
         try {
             watchService = FileSystems.getDefault().newWatchService();
             Path path = Paths.get(filePath).getParent();
@@ -69,14 +73,24 @@ class SidecarService implements QuarkusApplication {
     }
 
     private void processLogFile() {
+        Map<String, String> hfinal = new HashMap<>();
         try {
             List<String> lines = Files.readAllLines(Paths.get(filePath));
             for (String line : lines) {
+                System.out.println("Line: " + line);
                 String[] parts = line.split(",");
                 if (parts.length >= 5) {
                     String orderId = parts[0].trim();
                     String horaFinal = parts[4].trim();
-                    jedis.hset("orders", orderId, horaFinal);
+                    hfinal = new HashMap<>();
+                    hfinal.put("horaFinal", horaFinal);
+                    jedis = new Jedis(redisHost, redisPort);
+                    if (redisPassword != null && !redisPassword.isEmpty()) {
+                        jedis.auth(redisPassword);
+                    }
+                    jedis.hset(orderId, hfinal);
+                    jedis.close();
+                    System.out.println(orderId + "-" + horaFinal);
                 }
             }
         } catch (IOException e) {

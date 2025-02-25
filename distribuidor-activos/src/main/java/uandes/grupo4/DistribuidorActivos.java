@@ -60,7 +60,7 @@ public class DistribuidorActivos {
         try {
             String deploymentName = "lmax-" + asset.toLowerCase().replace(" ", "-").replace("_", "-");
             String image = "quay.io/jcepedav/lmax:latest";
-            String sidecarImage = "busybox"; // Sidecar para logs
+            String sidecarImage = "quay.io/jcepedav/redis-sidecard:latest"; // Sidecar para logs
     
             // Volumen compartido entre contenedores
             V1Volume sharedVolume = new V1Volume()
@@ -78,9 +78,20 @@ public class DistribuidorActivos {
             V1Container sidecarContainer = new V1Container()
                 .name("log-sidecar")
                 .image(sidecarImage)
-                .command(java.util.List.of("sh", "-c", "tail -F /data/matches.log"))
-                .volumeMounts(java.util.List.of(new V1VolumeMount().name("shared-data").mountPath("/data")));
-    
+                .volumeMounts(java.util.List.of(new V1VolumeMount().name("shared-data").mountPath("/data")))
+                .env(java.util.List.of(
+                    new V1EnvVar().name("REDIS_HOST").value("redis"),
+                    new V1EnvVar().name("REDIS_PORT").value("6379"),
+                    new V1EnvVar().name("FILE_PATH").value("/data/matches.log"),
+                    new V1EnvVar().name("REDIS_PASSWORD")
+                        .valueFrom(new V1EnvVarSource()
+                            .secretKeyRef(new V1SecretKeySelector()
+                                .name("redis")
+                                .key("database-password")
+                            )
+                        )
+                ));
+
             // Labels para OpenShift
             Map<String, String> labels = Map.of(
                 "app", deploymentName,

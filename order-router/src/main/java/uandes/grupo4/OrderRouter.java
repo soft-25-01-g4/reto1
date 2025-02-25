@@ -25,15 +25,24 @@ public class OrderRouter {
 
     @Inject
     RedisService redisService;
+    
     @POST
     public Response routeOrder(Order order) {
+        System.out.println("order: " + order);
+        System.out.println("order.getAsset(): " + order.getAsset());
+
         String endpoint = assetToEndpoint.get(order.getAsset());
+        long timestamp;
 
-        long timestamp = System.currentTimeMillis();
-
-        redisService.saveOrderTiming(order.getId(), String.valueOf(timestamp));
+        if(order.getType().equals("buy"))
+        {
+            timestamp = System.currentTimeMillis();
+            redisService.saveOrderTiming(order.getId(), String.valueOf(timestamp));
+        }
 
         if (endpoint == null) {
+            timestamp = System.currentTimeMillis();
+            redisService.saveOrderFinish(order.getId(), String.valueOf(timestamp));
             return Response.status(Response.Status.OK)
                     .entity("Este activo no tiene ofertas disponibles: " + order.getAsset())
                     .build();
