@@ -2,16 +2,16 @@ import numpy as np
 import yaml
 
 # Define test durations (in seconds)
-warmup_duration = 300       # 5 min warm-up
-stochastic_duration = 1800  # 20 min stochastic load
-spike_duration = 300        # 5 min spike load
-cooldown_duration = 300     # 5 min cool-down
+warmup_duration = 3*60       # 5 min warm-up
+stochastic_duration = 30*60  # 30 min stochastic load
+spike_duration = 60        # 5 min spike load
+cooldown_duration = 2*60    # 5 min cool-down
 
 # Define request rates
 warmup_rps = 20    # Start slow
-lambda_rps = 100   # Average requests per second during stochastic phase
+lambda_rps = 84   # Average requests per second during stochastic phase
 spike_rps = 300    # High traffic spike
-cooldown_rps = 50  # Gradual decrease
+cooldown_rps = 20  # Gradual decrease
 
 # Generate stochastic RPS values using Poisson distribution
 stochastic_rps_values = np.random.poisson(lam=lambda_rps, size=stochastic_duration)
@@ -33,20 +33,21 @@ phases.append({"name": "Cool-down Phase", "duration": cooldown_duration, "arriva
 
 # Create Artillery test config
 artillery_config = {
-    "config": {"target": "https://order-juank1400-dev.apps.rm3.7wse.p1.openshiftapps.com"},
-    "phases": phases,
+    "config": {
+        "variables":{"category":["apl","rht","ibm","aws"]}
+        ,"target": "https://order-juank1400-dev.apps.rm3.7wse.p1.openshiftapps.com",
+       "phases": phases
+    },
     "scenarios": [
         {
             "flow": [
                 {"post": {
                     "url": "/orders",
-                    "json": {
-                        "userId": "{{ $randomNumber(10000, 100000) }}",
-                        "action": "{{ $randomString('buy', 'sell') }}",
-                        "asset": "{{ $randomString('apl', 'ibm', 'aws') }}",
-                        "quantity": "{{ $randomNumber(1, 50) }}",
-                        "amount": "{{ $randomNumber(10, 500) }}",
-                        "timestamp": "{{ $timestamp }}"
+                        "json":{
+                        "id": "{{ $randomNumber(1200000001, 1300000000) }}", # ID instead of userId
+                        "type":"buy",
+                        "asset": "{{category}}",
+                        "quantity": "{{$randomNumber(3,14)}}"  #
                     },
                     "headers": {"Content-Type": "application/json"}
                 }}

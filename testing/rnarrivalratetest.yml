@@ -1,0 +1,31 @@
+config:
+  variables:
+    category:
+      - "apl"
+      - "ibm"
+      - "aws"
+      - "rht"
+  target: "https://order-juank1400-dev.apps.rm3.7wse.p1.openshiftapps.com"
+  phases:
+  - name: "Warm-up Phase"
+    arrivalRate: 20
+    duration: 60
+  - name: "Stochastic Load Phase"
+    arrivalRate: 84
+    duration: 60
+    randomness: 1          # Introduces randomness to the arrival rate
+  - name: "Cool-down Phase"
+    arrivalRate: 20
+    duration: 60
+
+scenarios:
+  - flow:
+      - post:
+          url: "/orders"
+          json:
+              id: "{{$randomNumber(100,900000000)}}" # ID instead of userId
+              type: "buy"
+              asset:  "{{ category }}"
+              quantity: "{{$randomNumber(20,70)}}" # Random quantity between 1 and 50
+          headers:
+            Content-Type: "application/json"

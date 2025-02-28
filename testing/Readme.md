@@ -31,6 +31,6 @@ pip install matplotlib pandas pyyaml requests
 
 running
 ```sh
- artillery run load_test.yml
+ artillery run load_test.yml --output results1200am.json
  python plot_rps.py
 ```

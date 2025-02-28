@@ -1,0 +1,25 @@
+config:
+  variables:
+    category:
+      - "apl"
+      - "ibm"
+      - "aws"
+      - "rht"
+  target: "https://order-juank1400-dev.apps.rm3.7wse.p1.openshiftapps.com"
+  phases:
+    - name: "load phase"
+      duration: 3600
+      arrivalRate: 5  # Start with 10 RPS
+
+scenarios:
+  - flow:
+      #- log: "Using stock: {{category}}"  # This now works correctly
+      - post:
+          url: "/orders"
+          json:
+              id: "{{$randomNumber(0000000001,9350000000)}}" # ID instead of userId
+              type: "sell"
+              asset:  "{{ category }}"
+              quantity: "{{$randomNumber(700,1000)}}" # Random quantity between 1 and 50
+          headers:
+            Content-Type: "application/json"
