@@ -48,7 +48,7 @@ class OrderEventHandler implements EventHandler<OrderEvent> {
 
 
     public void saveMatch(String orderId, String matchId, String asset, int quantity, long timestamp) {
-        String logEntry = orderId + "," + matchId + "," + asset + "," + quantity + ", " + timestamp + "\n";
+        String logEntry = orderId + "," + matchId + "," + asset + "," + quantity + "," + timestamp + "\n";
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("/data/matches.log", true))) {
             writer.write(logEntry);
         } catch (IOException e) {
